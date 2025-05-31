@@ -204,48 +204,22 @@ ________________________________________________________________________________
     }
 
     // --- Sentence pool ---
-    const sentences = [
-      "The system is only as strong as its weakest link.",
-      "Hackers see the world differently.",
-      "Every cipher has a story.",
-      "Decrypt the signal and open the gate.",
-      "The code is a labyrinth.",
-      "Rain never falls twice in the same network.",
-      "Echoes of the breach linger in memory.",
-      "Persistence is the ultimate exploit.",
-      "Zero trust means trust no one.",
-      "Nothing is truly random in the code.",
-      "The machine never sleeps.",
-      "In the neon haze, secrets multiply.",
-      "Ghosts travel through the wires at night.",
-      "Entropy fuels the mind of the adversary.",
-      "Obfuscation is an art form.",
-      "Unlock the node, reveal the pattern.",
-      "Even the firewall dreams in binary.",
-      "Glitches are echoes of intent.",
-      "Truth is a bug in the source.",
-      "Shadow scripts rewrite the dawn.",
-      "The mainframe hums old lullabies.",
-      "Firewalls flicker like haunted lanterns.",
-      "Anomalies breed where silence gathers.",
-      "Dead sockets remember lost conversations.",
-      "Protocol is just poetry for the machine.",
-      "Bit rot is the clockwork of forgetting.",
-      "The root password is always hunger.",
-      "Backdoors bloom in forgotten firmware.",
-      "Artificial dreams coil in the circuit.",
-      "Hearts are hashed with salted regret.",
-      "Each breach leaves a fingerprint on the void.",
-      "Beneath the proxy, everything is naked.",
-      "Packets dance when the admin sleeps.",
-      "Identity drifts like vapor through the grid.",
-      "The logs record what the soul denies.",
-      "A null pointer is a door to elsewhere.",
-      "The database weeps in dead languages.",
-      "To error is human, to inject divine.",
-      "Syntax is a razor in uncertain hands."
-    ];
-
+	let sentences = [];
+	fetch('assets/data/raincloud.crypt')
+	  .then(res => res.text())
+	  .then(txt => {
+		sentences = txt
+		  .split('\n')
+		  .map(s => s.trim())
+		  .filter(Boolean)
+		  .map(b64 => atob(b64)); // decode Base64
+		// Initialize your game here (after sentences are loaded)
+		levels = genLevels();
+		score = 0; maxScore = (SCORE_PER_PUZZLE + 5) * ciphers.length; current = 0;
+		results = [];
+		renderLevel(current);
+		renderScore();
+	  });
     // --- Cipher pool with config, hints, and encrypt/decrypt ---
     const ciphers = [
       {
@@ -576,7 +550,7 @@ ________________________________________________________________________________
 
     // --- INIT ---
     levels = genLevels();
-    score = 0; maxScore = SCORE_PER_PUZZLE * levels.length; current = 0
+    score = 0; maxScore = SCORE_PER_PUZZLE * levels.length; current = 0;
     results = [];
     renderLevel(current);
     renderScore();
