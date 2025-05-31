@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Encryption Puzzle: Terminal Mini-Game</title>
+  <link href="https://fonts.googleapis.com/css?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #101922;
+      color: #00ffae;
+      font-family: 'Share Tech Mono', monospace;
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    .crt {
+      box-shadow: 0 0 18px 5px #00fff580;
+      border-radius: 10px;
+      background: #181f24;
+      padding: 2rem 2.5rem 2.5rem 2rem;
+      border: 3px solid #3fffa9;
+      position: relative;
+      min-width: 390px;
+      max-width: 97vw;
+    }
+    .crt:after {
+      content: "";
+      pointer-events: none;
+      position: absolute; inset: 0;
+      background: repeating-linear-gradient(
+        to bottom, 
+        rgba(0,255,174,0.05) 0 1px, 
+        transparent 1px 4px
+      );
+      mix-blend-mode: overlay;
+    }
+    h1 { font-size: 2em; margin: 0 0 1rem 0; letter-spacing: 0.07em; }
+    .ascii-art { color: #2dfbfc; text-shadow: 0 0 4px #00ffae80; margin-bottom: 0.5em; }
+    .enc-msg, .output, .hint { margin-bottom: 1em; }
+    .enc-msg span { color: #ff1c94; }
+    input[type="text"] {
+      background: #000c;
+      border: 1.5px solid #29fbc1;
+      color: #fff;
+      font-size: 1.1em;
+      padding: 6px 12px;
+      border-radius: 6px;
+      width: 270px;
+      margin-right: 8px;
+    }
+    button {
+      background: #192;
+      color: #00ffae;
+      border: 1.5px solid #2ff;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 1em;
+      padding: 7px 18px;
+      cursor: pointer;
+      box-shadow: 0 0 6px #00ffae40;
+      transition: background 0.2s;
+    }
+    button:hover { background: #013; }
+    .output { 
+      min-height: 2em;
+      background: #000a;
+      padding: 0.3em 0.8em;
+      border-radius: 6px;
+      color: #ffed8b;
+      font-size: 1.14em;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.7em;
+    }
+    .hint { font-size: 0.97em; color: #3fffa9; opacity: 0.8; }
+    .level-info { font-size: 1em; margin-bottom: 0.6em; color: #2cffa4; }
+    .success { color: #00ffae; font-weight: bold; }
+    .fail { color: #ff3360; font-weight: bold; }
+    .next-btn { margin-top: 1.2em; }
+    .scoreboard {
+      position: absolute; top: 12px; right: 28px; font-size: 1.04em; color: #ffed8b;
+      background: #003c30c0; border-radius: 8px; padding: 6px 15px;
+      border: 1.5px solid #29fbc1;
+      box-shadow: 0 0 8px #00ffae40;
+      z-index: 2;
+      letter-spacing: 0.04em;
+    }
+    .timer {
+      font-weight: bold; color: #ff5975; margin-left: 12px;
+    }
+    .footer { margin-top: 2em; font-size: 0.85em; color: #22e48b; opacity: 0.7; }
+    /* WIN PAGE */
+    #win-page {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(10,17,28, 0.97);
+      z-index: 99;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding-top: 60px;
+    }
+    #win-inner {
+      background: #151d22cc;
+      border: 2.5px solid #1fffc1;
+      border-radius: 16px;
+      box-shadow: 0 0 26px #01fdc940;
+      padding: 32px 18px 24px 18px;
+      min-width: 380px;
+      max-width: 98vw;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+    }
+    #scoreboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5em 0 1.2em 0;
+      font-size: 1em;
+      color: #eee;
+      background: #232c2c60;
+    }
+    #scoreboard-table th, #scoreboard-table td {
+      border: 1px solid #37ffb380;
+      padding: 0.38em 0.65em;
+      text-align: left;
+    }
+    #scoreboard-table th {
+      background: #11322c9c;
+      color: #00ffae;
+      font-weight: bold;
+    }
+    #scoreboard-table tr:nth-child(even) { background: #1a1d2170; }
+    #scoreboard-table tr:nth-child(odd)  { background: #18303b60; }
+    #final-score {
+      font-size: 1.3em; color: #ffd36a; font-weight: bold; margin-bottom: 0.7em;
+      letter-spacing: 0.04em;
+    }
+    #play-again-btn {
+      margin-top: 0.6em;
+      font-size: 1em;
+      padding: 8px 24px;
+      background: #191;
+      color: #00ffae;
+      border: 1.7px solid #0ff;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 6px #00ffae70;
+      transition: background 0.2s;
+    }
+    #play-again-btn:hover { background: #002d22; }
+  </style>
+</head>
+<body>
+  <div class="crt" id="game-container">
+    <div class="ascii-art">
+      <pre>
+ooooooo_ooo____oo____oooo_________ooooooo___oo____oo_ooooooo__oooooooo____oooo____ooooooo___
+oo______oooo___oo__oo____oo_______oo____oo__oo____oo_oo____oo____oo_____oo____oo__oo____oo__
+oooo____oo_oo__oo_oo______________oo____oo___oo__oo__oo____oo____oo____oo______oo_oo____oo__
+oo______oo__oo_oo_oo________ooooo_ooooooo______oo____oooooo______oo____oo______oo_ooooooo___
+oo______oo___oooo__oo____oo_______oo____oo_____oo____oo__________oo_____oo____oo__oo____oo__
+ooooooo_oo____ooo____oooo_________oo_____oo____oo____oo__________oo_______oooo____oo_____oo_
+____________________________________________________________________________________________
+      </pre>
+    </div>
+    <div class="scoreboard">
+      Score: <span id="score">0</span> / <span id="max-score">0</span>
+      <span class="timer" id="timer"></span>
+    </div>
+    <h1>Encryption Puzzle</h1>
+    <div class="level-info" id="level-info"></div>
+    <div class="enc-msg"><b>Encrypted Message:</b> <span id="enc-msg"></span></div>
+    <form id="solve-form" autocomplete="off">
+      <input type="text" id="user-input" placeholder="Type your answer..." autofocus>
+      <button type="submit">Decrypt</button>
+      <button type="button" id="hint-btn">Hint</button>
+    </form>
+    <div class="output" id="output"></div>
+    <div class="hint" id="hint" style="display:none;"></div>
+    <button class="next-btn" id="next-btn" style="display:none;">Next Level →</button>
+  </div>
+  <!-- WIN PAGE -->
+  <div id="win-page">
+    <div id="win-inner">
+      <h2>🎉 Congratulations, Agent!</h2>
+      <div id="final-score"></div>
+      <table id="scoreboard-table"></table>
+      <button id="play-again-btn">Play Again</button>
+      <div class="footer" style="margin-top:1.7em;">Coded by bak3n3ko</div>
+    </div>
+  </div>
+  <div class="footer">Coded by bak3n3ko | Ciphers: Caesar, Vigenère, Base64, Atbash, XOR, Hex | Score and timer enabled</div>
+  <script>
+    // --- HTML Escape for safety ---
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // --- Sentence pool ---
+    const sentences = [
+      "The system is only as strong as its weakest link.",
+      "Hackers see the world differently.",
+      "Every cipher has a story.",
+      "Decrypt the signal and open the gate.",
+      "The code is a labyrinth.",
+      "Rain never falls twice in the same network.",
+      "Echoes of the breach linger in memory.",
+      "Persistence is the ultimate exploit.",
+      "Zero trust means trust no one.",
+      "Nothing is truly random in the code.",
+      "The machine never sleeps.",
+      "In the neon haze, secrets multiply.",
+      "Ghosts travel through the wires at night.",
+      "Entropy fuels the mind of the adversary.",
+      "Obfuscation is an art form.",
+      "Unlock the node, reveal the pattern.",
+      "Even the firewall dreams in binary.",
+      "Glitches are echoes of intent.",
+      "Truth is a bug in the source.",
+      "Shadow scripts rewrite the dawn.",
+      "The mainframe hums old lullabies.",
+      "Firewalls flicker like haunted lanterns.",
+      "Anomalies breed where silence gathers.",
+      "Dead sockets remember lost conversations.",
+      "Protocol is just poetry for the machine.",
+      "Bit rot is the clockwork of forgetting.",
+      "The root password is always hunger.",
+      "Backdoors bloom in forgotten firmware.",
+      "Artificial dreams coil in the circuit.",
+      "Hearts are hashed with salted regret.",
+      "Each breach leaves a fingerprint on the void.",
+      "Beneath the proxy, everything is naked.",
+      "Packets dance when the admin sleeps.",
+      "Identity drifts like vapor through the grid.",
+      "The logs record what the soul denies.",
+      "A null pointer is a door to elsewhere.",
+      "The database weeps in dead languages.",
+      "To error is human, to inject divine.",
+      "Syntax is a razor in uncertain hands."
+    ];
+
+    // --- Cipher pool with config, hints, and encrypt/decrypt ---
+    const ciphers = [
+      {
+        name: "Caesar Cipher",
+        desc: () => {
+          const shift = Math.floor(Math.random() * 11) + 3; // 3-13
+          return {shift, hint: `Classic Caesar shift. Each letter is moved forward by ${shift}.`}
+        },
+        encrypt: (plain, conf) => caesarShift(plain, conf.shift),
+        decrypt: (enc, conf) => caesarShift(enc, 26 - conf.shift),
+        showKey: conf => `(shift ${conf.shift})`
+      },
+      {
+        name: "Vigenère Cipher",
+        desc: () => {
+          const keypool = ["RAIN", "KEY", "CODE", "CYBER", "NEON", "NODE", "SPRAWL", "BYTE", "GHOST"];
+          const key = keypool[Math.floor(Math.random() * keypool.length)];
+          return {key, hint: `Vigenère: Use the keyword "${key}". Letters repeat the keyword to shift the message.`}
+        },
+        encrypt: (plain, conf) => vigenere(plain, conf.key, 'enc'),
+        decrypt: (enc, conf) => vigenere(enc, conf.key, 'dec'),
+        showKey: conf => `(key: ${conf.key})`
+      },
+      {
+        name: "Base64",
+        desc: () => ({
+          hint: "Base64: The message is encoded in web-safe characters. Try any online Base64 decoder."
+        }),
+        encrypt: (plain, conf) => btoa(plain),
+        decrypt: (enc, conf) => {
+          try { return atob(enc); } catch { return "[Base64 decode error]"; }
+        },
+        showKey: conf => ""
+      },
+      {
+        name: "Atbash Cipher",
+        desc: () => ({
+          hint: "Atbash: Each letter is replaced with its reverse in the alphabet (A↔Z, B↔Y, ...)."
+        }),
+        encrypt: (plain, conf) => atbash(plain),
+        decrypt: (enc, conf) => atbash(enc),
+        showKey: conf => ""
+      },
+      {
+        name: "XOR Cipher",
+        desc: () => {
+          const keyChar = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // A-Z
+          return {
+            key: keyChar,
+            hint: `XOR cipher: Each character's code is XOR'd with '${keyChar}'.`
+          }
+        },
+        encrypt: (plain, conf) => xorStr(plain, conf.key),
+        decrypt: (enc, conf) => xorStr(enc, conf.key),
+        showKey: conf => `(key: '${conf.key}')`
+      },
+      {
+        name: "Hex Encoding",
+        desc: () => ({
+          hint: "Hex: The message is encoded in hexadecimal (two hex digits per character)."
+        }),
+        encrypt: (plain, conf) => toHex(plain),
+        decrypt: (enc, conf) => fromHex(enc),
+        showKey: conf => ""
+      }
+    ];
+
+    // --- Real Cipher Functions ---
+    function caesarShift(str, shift) {
+      return str.replace(/[a-zA-Z]/g, function(c){
+        const base = c <= 'Z' ? 65 : 97;
+        return String.fromCharCode((c.charCodeAt(0) - base + shift + 26) % 26 + base);
+      });
+    }
+    function vigenere(str, key, mode='dec') {
+      key = key.replace(/[^A-Za-z]/g, '').toUpperCase();
+      let out = '', j = 0;
+      for (let i = 0; i < str.length; ++i) {
+        let c = str[i];
+        if (c.match(/[A-Za-z]/)) {
+          let base = c <= 'Z' ? 65 : 97;
+          let k = key[j % key.length].charCodeAt(0) - 65;
+          if(mode === 'enc')
+            out += String.fromCharCode((c.charCodeAt(0) - base + k) % 26 + base);
+          else
+            out += String.fromCharCode((c.charCodeAt(0) - base - k + 26) % 26 + base);
+          j++;
+        } else { out += c; }
+      }
+      return out;
+    }
+    function atbash(str) {
+      return str.replace(/[A-Za-z]/g, function(c){
+        const code = c.charCodeAt(0);
+        if (c >= 'a' && c <= 'z') return String.fromCharCode(219 - code);
+        if (c >= 'A' && c <= 'Z') return String.fromCharCode(155 - code);
+        return c;
+      });
+    }
+    function xorStr(str, key) {
+      let out = '';
+      for (let i = 0; i < str.length; ++i) {
+        out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(0));
+      }
+      return out;
+    }
+    function toHex(str) {
+      return Array.from(str).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('');
+    }
+    function fromHex(hex) {
+      if (!/^[0-9a-f]+$/i.test(hex) || hex.length % 2 !== 0) return '[Invalid hex]';
+      let out = '';
+      for (let i = 0; i < hex.length; i += 2)
+        out += String.fromCharCode(parseInt(hex.substr(i,2),16));
+      return out;
+    }
+
+    // --- Generate levels dynamically on each game run ---
+    let levels = [];
+    let usedSentences = [];
+    function genLevels() {
+      usedSentences = [];
+      let chosen = [];
+      while (chosen.length < ciphers.length) {
+        let s = sentences[Math.floor(Math.random() * sentences.length)];
+        if (!chosen.includes(s)) chosen.push(s);
+      }
+      return ciphers.map((cipher, i) => {
+        const conf = cipher.desc();
+        const plain = chosen[i];
+        let enc = cipher.encrypt(plain, conf);
+        if (cipher.name === "XOR Cipher") enc = toHex(enc);
+        return {
+          name: cipher.name,
+          cipher: cipher,
+          enc: enc,
+          conf: conf,
+          answer: plain,
+          hint: conf.hint,
+          showKey: cipher.showKey(conf)
+        }
+      });
+    }
+
+    // --- Score and timer logic ---
+    let score = 0, maxScore = 0;
+	let levelStartTime = 0;
+    let current = 0;
+    let usedHint = false;
+    let solved = false;
+    let timer = null;
+    let timeLeft = 0;
+    const TIME_LIMIT = 180; // seconds
+    const SCORE_PER_PUZZLE = 10;
+    const HINT_PENALTY = 3;
+    let results = []; // <--- Tracks each puzzle for win screen
+
+    function renderScore() {
+      document.getElementById('score').textContent = score;
+      document.getElementById('max-score').textContent = maxScore;
+    }
+
+	function renderLevel(idx) {
+	  clearInterval(timer);
+	  usedHint = false;
+	  solved = false;
+	  timeLeft = TIME_LIMIT;
+	  levelStartTime = Date.now(); // <-- Track when this puzzle started
+	  document.getElementById('user-input').disabled = false;
+	  document.getElementById('hint').style.display = 'none';
+	  document.getElementById('output').textContent = '';
+	  document.getElementById('next-btn').style.display = 'none';
+
+      const lvl = levels[idx];
+      document.getElementById('level-info').innerHTML = `Level ${idx+1} / ${levels.length}: <span id="cipher-name">${lvl.name}</span>`;
+      document.getElementById('enc-msg').textContent = lvl.enc;
+      document.getElementById('user-input').value = '';
+      maxScore = SCORE_PER_PUZZLE * levels.length;
+      renderScore();
+      renderTimer();
+
+      timer = setInterval(() => {
+        timeLeft--;
+        renderTimer();
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          document.getElementById('user-input').disabled = true;
+          document.getElementById('output').innerHTML = `<span class="fail">⌛ Time's up!</span> <br>Decoded: <b>${escapeHtml(lvl.answer)}</b>`;
+          document.getElementById('next-btn').style.display = (current < levels.length - 1) ? "inline-block" : "none";
+        }
+      }, 1000);
+    }
+
+    function renderTimer() {
+      const el = document.getElementById('timer');
+      el.textContent = `⏳ ${timeLeft}s`;
+      if (timeLeft <= 10) el.style.color = "#ff3360";
+      else el.style.color = "#ffed8b";
+    }
+
+    function normalize(str) {
+      return str.toLowerCase().replace(/[\s\.,'";:!?\(\)\[\]\{\}_\-]/g, '');
+    }
+
+    function checkAnswer(user, lvl) {
+      let out = lvl.cipher.decrypt(lvl.enc, lvl.conf);
+      if (lvl.cipher.name === "XOR Cipher") {
+        try { out = xorStr(fromHex(lvl.enc), lvl.conf.key); }
+        catch { out = "[XOR decode error]"; }
+      }
+      let correct = (normalize(user) === normalize(lvl.answer));
+      return { correct, out };
+    }
+
+    // --- EVENTS ---
+    document.getElementById('solve-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (timeLeft <= 0) return;
+      const userVal = document.getElementById('user-input').value;
+      const lvl = levels[current];
+      const { correct, out } = checkAnswer(userVal, lvl);
+      const output = document.getElementById('output');
+      if (correct) {
+		  if (!solved) {
+			clearInterval(timer);
+			let pts = SCORE_PER_PUZZLE;
+			if (usedHint) pts -= HINT_PENALTY;
+			if (timeLeft <= 0) pts = 0;
+			// --- New: Calculate time taken and speed bonus ---
+			let timeTakenSec = Math.round((Date.now() - levelStartTime) / 1000);
+			let speedBonus = 0;
+			if (timeTakenSec <= Math.floor(TIME_LIMIT * 0.15)) { // within 15%
+			  pts += 5;
+			  speedBonus = 5;
+			}
+			score += pts;
+			renderScore();
+			solved = true;
+			output.innerHTML = `<span class="success">✔️ Correct!</span> <br>Decoded: <b>${escapeHtml(out)}</b> <br>
+			  <span style="font-size:0.95em;opacity:.75;">+${pts} pts${speedBonus ? " <span style='color:#ffed8b;'>(+5 speed bonus!)</span>" : ""}</span>
+			  <br><span style="font-size:0.85em;color:#39fba7b2;">Time: ${timeTakenSec}s</span>`;
+			document.getElementById('user-input').disabled = true;
+			document.getElementById('next-btn').style.display = (current < levels.length - 1) ? "inline-block" : "none";
+			// --- STORE PUZZLE RESULT for scoreboard ---
+			results[current] = {
+			  cipher: lvl.name,
+			  enc: lvl.enc,
+			  user: userVal,
+			  answer: lvl.answer,
+			  score: pts,
+			  usedHint: usedHint ? "Yes" : "No",
+			  timeTaken: timeTakenSec,
+			  speedBonus: speedBonus ? "Yes" : ""
+			};
+			// If last level, show Win Page
+			if (current === levels.length - 1) {
+			  setTimeout(showWinPage, 800);
+			}
+		  } else {
+			output.innerHTML = `<span class="success">✔️ Correct!</span> <br>Decoded: <b>${escapeHtml(out)}</b>`;
+		  }
+		} else {
+		  output.innerHTML = `<span class="fail">✗ Incorrect.</span> Try again.`;
+		}
+    });
+
+    document.getElementById('hint-btn').addEventListener('click', function() {
+      if (!usedHint && timeLeft > 0) {
+        document.getElementById('hint').textContent = "Hint: " + levels[current].hint +  ` (${HINT_PENALTY} pts penalty)`;
+        document.getElementById('hint').style.display = 'block';
+        if (!solved) usedHint = true;
+      }
+    });
+
+    document.getElementById('next-btn').addEventListener('click', function() {
+      if (current < levels.length - 1) {
+        current++;
+        renderLevel(current);
+      }
+    });
+
+    // --- WIN PAGE LOGIC ---
+    function showWinPage() {
+      document.getElementById('game-container').style.display = 'none';
+      document.getElementById('win-page').style.display = 'flex';
+
+      let total = 0;
+      let html = `<tr>
+        <th>#</th>
+        <th>Cipher</th>
+        <th>Encoded</th>
+        <th>Your Answer</th>
+        <th>Decoded</th>
+        <th>Score</th>
+        <th>Hint?</th>
+        <th>Time (s)</th>
+        <th>Speed Bonus?</th>
+      </tr>`;
+      results.forEach((r, i) => {
+        total += r.score;
+        html += `<tr>
+      	<td>${i+1}</td>
+      	<td>${escapeHtml(r.cipher)}</td>
+      	<td>${escapeHtml(r.enc)}</td>
+      	<td>${escapeHtml(r.user)}</td>
+      	<td>${escapeHtml(r.answer)}</td>
+      	<td>${r.score}</td>
+      	<td>${r.usedHint}</td>
+      	<td>${r.timeTaken || ""}</td>
+      	<td>${r.speedBonus || ""}</td>
+      </tr>`;
+	});
+      document.getElementById('scoreboard-table').innerHTML = html;
+      document.getElementById('final-score').innerHTML = `<b>Total Score:</b> ${total} / ${(SCORE_PER_PUZZLE + 5) * levels.length}`;
+    }
+
+    // --- RESTART GAME ---
+    document.getElementById('play-again-btn').onclick = function() {
+      document.getElementById('win-page').style.display = 'none';
+      document.getElementById('game-container').style.display = '';
+      // Reset game state
+      levels = genLevels();
+      score = 0; maxScore = SCORE_PER_PUZZLE * levels.length; current = 0;
+      results = [];
+      renderLevel(current);
+      renderScore();
+    };
+
+    // --- INIT ---
+    levels = genLevels();
+    score = 0; maxScore = SCORE_PER_PUZZLE * levels.length; current = 0
+    results = [];
+    renderLevel(current);
+    renderScore();
+
+  </script>
+</body>
+</html>
